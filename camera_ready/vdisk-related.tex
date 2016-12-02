@@ -1,0 +1,34 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Related Work}
+\label{sec:related}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+NeSC was motivated by the necessity to redesign the hardware/software storage stack for modern, high-speed, self-virtualizing storage devices. In this section we examine related research efforts.
+
+The Moneta~\cite{caulfield10moneta} and Moneta-D~\cite{caulfield12moneta-d} projects both try to optimize the I/O stack by introducing new hardware/software interfaces.
+The Moneta project introduces a storage array architecture for high-speed non-volatile memories. Moneta-D extends the design to allow applications
+to directly access storage by introducing per-block capabilities~\cite{levy1984capability}. When an application directly accesses the storage, permission checks are done by the hardware to preserve protection policies dictated by the OS.
+The design, however, requires applications to use a user space library to map file offsets to the physical blocks on the device.
+In contrast, NeSC enforces file protection by delegating file mapping to the device level rather than to the application level.
+
+Willow~\cite{seshadri2014willow} examines offloading computation to small storage processing units (SPU) that reside on the SSD. The SPUs run a small OS (SPU-OS) that enforces data protection. Willow implements a custom software protocol that maintains file mapping coherence between the main OS and the SPU-OS instances.
+
+NVMe~\cite{nvme} is a new protocol for accessing high-speed storage devices. Typically implemented over PCIe, NVMe defines an abstract concept of \emph{address spaces} through which applications and VMs can access subsets of the target storage device. The protocol, however, does not specify how address spaces are defined, how they are maintained, and what they represent. 
+NeSC therefore complements the abstract NVMe address spaces and enables the protocol to support protected, self-virtualizing storage devices.
+
+
+MultiLanes~\cite{kang2014multilanes}
+mediates the contention on a hypervisor's shared I/O stack by presenting each VM with a dedicated, virtualized I/O stack. Nevertheless, the underlying device accesses issued by each VM must still be mediated, in software, by the hypervisor.
+
+
+Peter et al.~\cite{peter2016arrakis} 
+  argue that the SR-IOV concept should be extended and that the operating system should serve as a system's control plain and enable applications to directly access devices. The NeSC storage controller is in line with their view.
+
+
+Finally, FlashMap~\cite{huang2015unified} provides a unified translation layer for main memory and SSDs, which enables applications to map files to their memory address space. Specifically, FlashMap unifies three orthogonal translation layers used in such scenarios: the page tables, the OS file mapping, and the flash translation layer.
+FlashMap, however, only supports memory-mapped SSD content, and it does not address how the unified translation would support virtualized environments.
+
+In summary, NeSC's self-virtualizing design is unique in that it delegates all protection checks and filesystem mappings to the hardware. Furthermore, its  filesystem-agnostic design preserves the hypervisor's flexibility to select and manage the host filesystem.
+
+
+

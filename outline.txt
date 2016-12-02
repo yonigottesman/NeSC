@@ -1,0 +1,63 @@
+
+1. abstract + intro (1.25 page)
+
+2. motivation (1.5-2 pages)
+
+   - Current status. full emulation, virtio, direct assignment
+   - Compare with figure and graph
+   - We need flex of emulation with performance of direct
+   - Stoage isnt allocated untill used
+
+3. system design (3 pages)
+
+a. self virtualization:
+   - explain SR-IOV; explain physical function vs. virtual functions; explain that SR-IOV depends on device semantics
+   - storage context: virtual function needs access to a subset of the physical disk. This is achieved by associating each virtual function with a mapping table.
+
+b. now you should explain how the mapping table is designed.
+   - how filesystems do it; extents; b-tree; extents vs. blocks and how they are used in modern filesystems.
+   - how is our case different from classical filesystems (extent tree must be read using DMAs; as contiguous in memory as possible)
+   - mapping table: mapping table and how they are created; extent tree does not have uniform depth (figure)
+
+
+c. describe the workflow.
+   - the first step is explaining the flow of creating a virtual function; virtual disk size is defined as the maximal file size; emphasize that this process only occurs when the file is opened, so it can be a little costly.
+   - read flow: text and flow diagram
+   - write flow: text and flow diagram;
+       - emphasize that the write flow supports writing to "holes" in the file, and explain how that works.
+       - explain that the size that the virtual device presents to the VM can be bigger than the file size - this is simply another hole in the file. Also explain how this allows VMs to concatenate data to the file.
+   
+
+d. discuss nested filesystems
+  - double journaling; host only journals the filesystem metadata, guest journals the nested filesystem
+  - has been shown to provide performance benefits \cite{le12nested}
+
+e. implication on hypervisor: (NEW)
+   - block caching distributed to VMs
+   baloon drivers should work? 
+
+
+4. system architecture (2 pages)
+
+This section should describe all the hardware components, one by one. Note that in this section you do not need to refer to the FPGA itself. You are describing the architecture, not how you tested it (i.e., the FPGA prototype). The implementation using an FPGA is part of the methodology, not the architectures (see also comment #3).
+
+1. You can start with the high level layout (the Figure you already have), but you need to add a figure and a textual description for each component.
+
+2. Describe the interaction between the VM and the device: the requests and the ring buffer.
+
+
+5. methodlogy (0.25-0.5 page)
+
+- implemented architecture on a Virtex-7 FPGA (VC707 dev. board)
+- describe how we emulated SR-IOV using a PCIe gen2 device should be contained in its own subsection. We will possibly move it to the methodology later on.
+
+- benchmarks
+
+- architectural parameters (cahce size)
+
+6. evaluation (2-3 pages)
+
+- statistics on # of extents per file
+
+7. conclusions
+

@@ -1,0 +1,11 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Conclusions}
+\label{sec:conclusions}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+The emergence of multi-GB/s storage devices has shifted storage virtualization bottlenecks from the storage devices to the software layers. System designers must therefore delegate the virtualization overheads in order to enable virtualized environments to benefit from high-speed storage. 
+
+In this paper we presented the \emph{nested, self-virtualizing storage controller} (NeSC), which enables files stored on the hypervisor-managed filesystem to be directly mapped to guest VMs. NeSC delegates filesystem functionality to the storage device by incorporating mapping facilities that translate file offsets to disk blocks. This enables NeSC to leverage the self-virtualization SR-IOV protocol and thereby expose files as virtual devices on the PCIe interconnect, which can be mapped to guest VMs.
+
+We prototyped NeSC using a Virtex-7 FPGA and evaluated its performance benefits on a real system. Our comparison of NeSC to the leading \emph{virtio} storage virtualization method, shows that NeSC effectively eliminates the hypervisor's filesystem overheads, as filesystem accesses to a NeSC virtual device incur the same latency as accesses to a raw virtio device.
+Furthermore, we have shown that NeSC speeds up common storage benchmarks by \speedup{1.2}--\speedup{2}.

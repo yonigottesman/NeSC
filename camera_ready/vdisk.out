@@ -1,0 +1,17 @@
+\BOOKMARK [1][-]{section.1}{Introduction}{}% 1
+\BOOKMARK [1][-]{section.2}{On the performance overheads of storage virtualization}{}% 2
+\BOOKMARK [1][-]{section.3}{Related Work}{}% 3
+\BOOKMARK [1][-]{section.4}{Design}{}% 4
+\BOOKMARK [2][-]{subsection.4.1}{The NeSC interface}{section.4}% 5
+\BOOKMARK [2][-]{subsection.4.2}{Virtual-to-physical block mapping}{section.4}% 6
+\BOOKMARK [2][-]{subsection.4.3}{Operational flow}{section.4}% 7
+\BOOKMARK [2][-]{subsection.4.4}{Other design issues}{section.4}% 8
+\BOOKMARK [1][-]{section.5}{Architecture}{}% 9
+\BOOKMARK [2][-]{subsection.5.1}{The NeSC virtual function multiplexer}{section.5}% 10
+\BOOKMARK [2][-]{subsection.5.2}{The vLBA-to-pLBA translation unit}{section.5}% 11
+\BOOKMARK [1][-]{section.6}{Methodology}{}% 12
+\BOOKMARK [1][-]{section.7}{Evaluation}{}% 13
+\BOOKMARK [2][-]{subsection.7.1}{Raw device performance}{section.7}% 14
+\BOOKMARK [2][-]{subsection.7.2}{Application performance}{section.7}% 15
+\BOOKMARK [1][-]{section.8}{Conclusions}{}% 16
+\BOOKMARK [1][-]{section*.14}{References}{}% 17

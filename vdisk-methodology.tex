@@ -1,0 +1,110 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Methodology}
+\label{sec:methodology}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{table}[t]
+  \centering
+  \small
+  \begin{tabular}{|p{0.3\columnwidth}|p{0.6\columnwidth}|}
+    \hline
+    \multicolumn{2}{|c|}{\textbf{Host machine}} \\
+    \hline
+    Machine model	& Supermicro X9DRG-QF \\
+    \hline
+    Processor 		& Dual socket Intel(R) Xeon(R) CPU E5-2665 @ 2.40GHz (Sandybridge) \\
+    \hline
+    Memory 		& 64GB DDR3 1333 MHz \\
+    \hline
+    Operating system 	& Ubuntu 12.04.5 LTS (kernel 3.5.0) \\
+    \hline
+    \hline
+    \multicolumn{2}{|c|}{\textbf{Virtualized system}} \\
+    \hline
+    Virtual machine monitor 	& QEMU version 2.2.0 with KVM \\
+    \hline
+    Guest OS 			& Linux 3.13 \\
+    \hline
+    Guest RAM 			& 128MB \\
+    \hline
+    Filesystem on NeSC volume	& ext4 \\
+    \hline
+    \hline
+    \multicolumn{2}{|c|}{\textbf{Prototyping platform}} 	\\
+    \hline
+    Model		& Xilinx VC707 Evaluation board 	\\
+    \hline
+    FPGA		& Virtex-7 (XC7VX485T-2FFG1761C) 	\\
+    \hline
+    RAM			& 1GB DDR3 800MHz 			\\
+    \hline
+    Host I/O		& PCI Express x8 gen2			\\
+    \hline
+  \end{tabular}
+
+  \vspace*{-2ex}
+  \caption{Experimental platform\label{tab:system}}
+  \vspace*{4ex}
+
+
+  \small
+  \begin{tabular}{|p{0.3\columnwidth}|p{0.6\columnwidth}|}
+    \hline
+    \multicolumn{2}{|c|}{\textbf{Microbenchmark}} \\
+    \hline
+    GNU dd~\cite{coreutils}	& read/write files using different operational parameters.\\
+    \hline
+    \hline
+    \multicolumn{2}{|c|}{\textbf{Macrobenchmarks}} \\
+    \hline
+    Sysbench File I/O~\cite{kopytov2004sysbench}
+    			& A sequence of random file operations \\
+    \hline
+    Postmark~\cite{katcher1997postmark}
+    			& Mail server simulation \\
+    \hline
+    MySQL~\cite{mysql}	& Relational database server serving the SysBench OLTP workload  \\
+    \hline
+    \hline
+  \end{tabular}
+
+  \vspace*{-2ex}
+  \caption{Benchmarks\label{tab:bench}}
+
+
+\end{table}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\paragraph{Experimental system}
+Table~\ref{tab:system} describes our experimental system, which consists of a Supermicro X9DRG-QF server equipped with a Xilinx VC707 evaluation board.
+
+We have implemented NeSC on the VC707's Virtex-7 FPGA. Since this revision of the Virtex7 FPGA only supports PCIe Gen2, we had to emulate the self-virtualizing features rather than use the SR-IOV protocol extension. We have emulated the SR-IOV functionalities by dividing the device's memory-mapped BAR to 4KB pages. The first page exports the NeSC PF, and subsequent pages export complete VF interfaces. Upon QEMU startup, the hypervisor maps one of the VF interfaces (offset in the BAR) into the physical address space of the VM. A  multiplexer in the device examines the address to which each PCIe packet (TLP) was sent and queues it to the appropriate VF's command queue. For example, a read TLP that was sent to address 4244 in the NeSC device would have been routed by the multiplexer to offset 128 in the first VF.
+
+Furthermore, since the emulated VFs are not recognized by the IOMMU, VMs cannot DMA data directly to the VC707 board. Instead, the hypervisor allocates trampoline buffers for each VM, and VMs have to copy data to/from the trampoline buffers before/after initiating a DMA operation.
+
+We note that both SR-IOV emulation and trampoline buffers actually impede the performance of NeSC and thereby provide a pessimistic device model. Using a true PCIe gen3 device would improve NeSC's performance.
+
+We further note that we do not emulate a specific technology access latency for the emulated storage device. Instead, we simply use direct DRAM reads and writes latencies.
+
+We used the QEMU/KVM virtual machine monitor. Since the VC707 board only has 1GB of RAM, we could only emulate 1GB storage on the NeSC device. In order to prevent the entire simulated storage device from being cached in RAM, we limited the VM's RAM to 128MB. We validated that this limitation does not induce swapping in any of the benchmarks.
+
+Finally, in order for NeSC to truly function as a self-virtualizing device, we implemented the VF guest driver, which is a simple block device driver, and the hypervisor PF driver, which acts as a block device driver as well as the NeSC management driver for creating and deleting VFs.  
+
+\paragraph{Benchmarks}
+Table~\ref{tab:bench} lists the benchmarks used to evaluate NeSC.
+We first evaluated read/write performace metrics (e.g., bandwidth, latency) using the \emph{dd} Unix utility.
+In addition, we used a common set of macrobenchmarks that stress the storage system.
+All applications used the virtual device through an underlying ext4 filesystem.
+
+\hide{
+We evaluated 3 applications and compared their performance speedup when using direct assignment.
+All the applications use the virtual device through an underlying EXT4 filesystem.
+%
+The first application is a MySQL database. We run the OLTP workload using SysBench \cite{kopytov2004sysbench} on the database and measure the TPS. SysBench conduct complex transactional queries along with simple read and write update to the database.
+%
+The second application is the SysBench file IO benchmark. This benchmark fills the files system with various sized files and randomly reads and writes to and from each of the files. The benchmark measures the total MB/sec.
+%
+The third application is PostMark~\cite{katcher1997postmark}, which models the workload of an Internet Service Provider under heavy load. PostMark measures TPS. 
+}

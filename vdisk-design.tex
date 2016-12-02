@@ -1,0 +1,175 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Design}
+\label{sec:design}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+In this section we overview the NeSC design principles and basic functionality. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{The NeSC interface}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+NeSC implements the SR-IOV standard \cite{pcisigiov}, which allows an I/O device to be shared by multiple VMs.
+An SR-IOV device can present itself as multiple standard PCIe devices. A single \emph{physical function} (PF) represents the main devices with all its features. Additionally, the device may dynamically expose multiple {virtual functions} (VFs), which typically present to clients (e.g., VMs, accelerators) a subset of features supported by the main device. Importantly, each VF has a unique PCIe address and can receive direct I/O requests from its associated client without hypervisor or OS intervention.
+%
+Since both the PF and the VFs effectively represent different facets of a single physical device, which multiplexes and processes the communication of all the clients with the different facets.
+%
+It is thus up to the physical device to determine the behavior of the device exported as the PF and that of a virtual device exposed as a VF.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection*{The physical function}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+The NeSC PF exports a full-featured PCIe storage controller. It is mapped only to the hypervisor address space and allows it to fully manage the physical  device.
+The hypervisor uses the PF interface to
+(1) manage the underlying NeSC storage and thereby its filesystem;
+and (2) manage the NeSC virtual devices by controlling the creation and deletion of VFs and the subsets of storage they are allowed to access.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection*{Virtual functions}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Each NeSC VF is viewed by the system as a PCIe device that provides a complete block device interface. A VF can thus be mapped to a VM's address space and viewed by it as a fully fledged storage device, which can be programmed by the VM's driver to issue read/write commands to the storage device. Technically, the only difference between the PF and VF interface is that a VF is not allowed to create nested VFs (although, in principle, such a mechanism can be implemented to support nested virtualization).
+
+The PF and VF differ semantically in that VFs can only access the subset of the storage they are associated with. When a VM accesses a VF, all of its read/write block requests are translated to the subset of blocks assigned to that VM as described below.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Virtual-to-physical block mapping}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Decoupling the PF from the VFs enables the hypervisor to logically manage the physical device with its own filesystem, and expose files (or collections thereof) to client VMs as raw virtual devices through VFs (as illustrated in Figure~\ref{fig:nesc_outline}). Each VF is thus associated with a mapping table that translates client requests to physical blocks. Specifically, since client VMs view VFs as regular block devices, they send requests pertaining to LBAs on the virtual device. NeSC refers to client LBAs as virtual LBAs (vLBA), to host LBAs as physical LBAs (pBLA), and the translation process is referred to as a vLBA-to-pLBA translation.
+
+The vLBA-to-pLBA mapping is performed using per-VF mapping tables. The mapping tables are designed as \emph{extent trees}, a method inspired by modern UNIX filesystems.
+%
+Traditionally, UNIX-derived filesystems used per-file direct and indirect  block mapping tables to map offsets in a file to their corresponding data block. But tracking individual blocks incurs large spatial and latency overheads when dealing with large files. Modern UNIX filesystems (e.g., ext4~\cite{mathur07ext4}, btrfs~\cite{rodeh13btrfs}, xfs~\cite{sweeney96xfs}) therefore group contiguous physical blocks into \emph{extents} and construct extent trees, which consist of variants of B-trees~\cite{comer79btree}, to spatially map offsets in the device to extents.
+Each file is associated with an extent tree (pointed to by the file's \emph{inode}) that maps file offsets to physical blocks.
+
+The key benefit of extent trees is that their depth is not fixed but rather depends on the mapping itself. In ext4, for example, a 100MB file can be allocated using a single extent, thereby obviating the need to create the indirect mappings for each individual block. Extents thus improve performance and also reduce management overheads.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{figure*}[t]
+  \centering
+      \subfloat[Extent tree ]{
+        \includegraphics[width=0.7\textwidth]{figs/Ext4_extents.pdf}
+        \label{fig:extent_tree}
+      }
+%      \hfill
+      \subfloat[An extent/node pointer entry.]{
+%      \centering
+      \includegraphics[width=0.3\textwidth]{figs/extent_feilds.pdf}
+      \label{fig:extent_fields}
+    }
+%    \hfill
+
+      \caption{An extent tree used for address translations.\label{fig:extent}}
+
+\end{figure*}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Figure~\ref{fig:extent_tree} illustrates the NeSC VF extent tree (which resembles the ext4 extent tree format). Each node in the tree comprises either a group of node pointers, which point to the next level of nodes, or a group of extent pointers, which are the tree leaves that point to the physical location of the extents. The header of each node indicates whether it contains node indices or extent pointers.
+
+%% %%%%%%%%%%%%%%%%%%%%
+%% \begin{figure}[t]
+%% %  \vspace*{-1.5ex}
+%%   \centering
+%%     \subfloat[An extent pointer entry.]{
+%% %      \centering
+%%       \includegraphics[width=0.2\textwidth]{figs/extent.pdf}
+%%       \label{fig:extent}
+%%     }
+%% %    \hfill
+%%     \subfloat[A node pointer entry]{
+%% %     \centering
+%%       \includegraphics[width=0.2\textwidth]{figs/extent_index.pdf}
+%%       \label{fig:extent-index}
+%%     }
+%%     \caption{Content of extent pointer and node pointer entries.\label{fig:extent_struct}
+%%       \comment{TO YOAV: How should this figure look like? its just the fields in a struct so maybe we can just not use an image.  I dont mind using ``node/extent entry'' if its easier to explain but in ext4 its extent-index and extent.  }}
+%% \end{figure}
+%%%%%%%%%%%%%%%%%%%%
+
+Figure~\ref{fig:extent_fields} illustrates the content of the entries in each type of node in the extent tree. Each \emph{extent pointer} entry consists of the first logical block it represents, a pointer to the first physical block of its extent, and the size of the extent. Each \emph{node pointer} entry comprises the first logical block it represents, the number of (non contiguous) logical blocks it covers, and a pointer to its array of child nodes.
+
+Each  NeSC's VF is associated with an extent tree, which is stored in host memory, and the NeSC architecture (described in Section~\ref{sec:arch}) stores the pointer to the root of each VF's extent tree. Whenever a VF is accessed, its extent tree is traversed using DMA accesses from the device to host memory. To mitigate the DMA latency, extents are cached on the NeSC device (more on this in Section~\ref{sec:arch}).
+
+Importantly, this use of software-defined, hardware-traversed per-VF extent trees eliminates the need to enforce protection and isolation in the hypervisor software layers, as discussed in Section~\ref{sec:motiv}. Instead, this task is offloaded to hardware and thereby mitigates one of the key performance bottlenecks of virtualized storage~\cite{le12nested}.
+
+The per-VF extent tree model also enables the hypervisor to decouple the virtual device's size from its physical layout. This allows the hypervisor to initialize virtual devices whose logical size is larger than their allocated physical space, and to allocate further physical space when needed. This enables the hypervisor to maintain a compact physical representation of the stored data.
+
+Finally, the NeSC design also enables multiple VFs to share an extent tree and thereby files. Nevertheless, NeSC only guarantees the consistency of the extent tree for shared files; it is up to the client VMs to address data synchronization and consistency issues.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Operational flow}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection*{Creating a new virtual disk}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+When creating a new virtual device, the hypervisor first creates the extent tree that will map the virtual device to physical blocks. Since most modern filesystems use extent trees to map files to their physical layout, this stage typically consists of translating the filesystem's own per-file extent tree to the NeSC tree format. The hypervisor does not fully preallocate all the physical blocks needed for the new virtual device (i.e., lazy allocation). 
+
+The hypervisor then creates a new NeSC VF through the PF. It initializes the VF configuration registers (e.g., the size of the virtual device), writes the extent tree to non-swappable memory and sets the VF's base extent tree configuration register to point to the in-memory extent tree.
+
+Following the two previous steps, the VF is ready and the virtual device is configured. The hypervisor then connects the VM to the new virtual machine, either by executing a new machine or by notifying an existing machine that a new device is available for its use (virtual device hotplug).
+
+%%%%%%%%%%%%%%%%%%%%
+\begin{figure*}[t]
+
+  \vspace*{-1.5ex}
+  \centering
+  \subfloat[Read Flow ]{
+    \includegraphics[width=0.85\columnwidth]{figs/read_flow.pdf}
+ %   \caption{Read Flow}
+    \label{fig:read_flow}
+  }
+  \hfill
+  %% \vspace*{-1.5ex}
+  \subfloat[Write Flow ]{
+    \includegraphics[width=0.85\columnwidth]{figs/write_flow.pdf}
+%    \caption{Write Flow}
+    \label{fig:write_flow}
+  }
+  \caption{Read and write flow in NeSC.\label{fig:flow}}
+\end{figure*}
+%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection*{Read flow}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+The read flow is depicted in Figure~\ref{fig:read_flow}. The VM's NeSC block driver is attached to the VF and can issue read requests to the device. Large requests are broken down by the driver to scatter-gather lists of smaller chunks. Our NeSC implementation operates at 1KB block granularity (which is, for example, the smallest block size supported by ext4), so the chunks sent by the block driver are broken down by NeSC to 1KB blocks.
+
+The device then translates each 1024 byte request address through the extent tree mappings of that virtual function and creates a new queue of physical requests to read from physical storage and DMA back to the host memory.
+
+According to the POSIX standard, reads from unmapped areas inside a file (holes in the file) should return zero. Therefore, if the destination vLBA is not mapped in the extent tree, NeSC transparently DMAs zeros to the destination buffer in host memory.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection*{Write flow}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+The write flow is shown in Figure~\ref{fig:write_flow}. Just like read requests, write requests are broken down by NeSC to 1KB chunks.
+
+For each chunk, the device tries to perform vLBA-to-pLBA mapping using the VF's extent tree. If the translation succeeds, the data is written to the persistent physical storage.
+However, lazy allocation may cause  the translation to fail, in which case new physical blocks should be allocated to the VF. Because the VF represents a file in the hypervisor's filesystem, the allocation must be delegated to the hypervisor. NeSC implements this by sending an allocation request interrupt to the hypervisor and stalling the VF until the hypervisor allocates more physical storage.
+%
+Upon receiving the interrupt, the hypervisor allocates more physical blocks for the the file, updates the VF's extent tree, and signals completion to the NeSC device. NeSC then unstalls the VF's request by restarting the extent tree lookup, which is now guaranteed to succeed. If, however, the hypervisor cannot allocate more space for the VF (not shown in Figure~\ref{fig:write_flow}) due to a lack of physical storage or exhausted storage quotas, it signals an error to the PF which, in turn, triggers the VF to send a write failure interrupt to the requesting VM (we note that it is possible to optimize this process by delegating the interrupt directly to the VM~\cite{gordon12eli}).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Other design issues}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection*{Nested filesystems}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+A client VM will often manage its own filesystem inside its nested storage device. Given that a virtual device is stored as a file in the hypervisor's filesystem, this use case is commonly referred to as a nested filesystem.
+
+Modern filesystems frequently use journaling for improved fault tolerance. This causes a well-known inefficiency in nested filesystems known as nested journaling~\cite{le12nested}. The inefficiency is caused as both the internal and external filesystems redundantly log the internal filesystem's data and meta-data updates. The common solution to this inefficiency is to tune the hypervisor's filesystem to only log meta-data changes for the file at hand and let the VM handle its internal filesystem's data integrity independently.
+
+NeSC naturally lends itself to this common solution. Since NeSC VM clients directly access their data, the hypervisor's filesystem is not aware of the internal filesystem updates, whose integrity it handled by the VM, and only tracks its own meta-data updates.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection*{Direct storage accesses from accelerators}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+A straightforward extension of NeSC is to export data to accelerators in the system.
+Traditionally, when an accelerator on the system wants to access storage, it must use the host OS as an intermediary and thereby waste CPU cycles and energy.
+
+While not implemented in the prototype, we note that NeSC can be easily extended to enable direct accelerator-storage communications. This can be easily achieved by modifying the VF request-response interface, which is suitable for block devices, to a direct device-to-device DMA interface (in which offset 0 in the device matches offset 0 in the file, and so on.
+
+This simple change to the VF interface will enable accelerators to directly access storage using DMA, without interrupting the main processor and the OS. Such a design directly corresponds with the data-centric server concept presented by Ahn et al.~\cite{ahn2015dcs}

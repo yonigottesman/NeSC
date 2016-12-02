@@ -1,0 +1,69 @@
+We thank the reviewers for their time and helpful comments. We will be sure to incorporate the comments and suggestions in the final version.
+
+
+1. Novelty (reviewers A, C, D)
+----------
+
+The main contribution of NeSC are as follows (we will clarify those in the final version):
+- Offloading file mapping and permission check operations to hardware (current systems implement this functionality in software).
+- Defining a clean hardware/software interface that allows unmodified guest VMs (and even discrete accelerators) to access block storage device directly while preserving data isolation. The interface leverages the existing SR-IOV specification.
+- Quantifying the runtime overheads incurred by mediating all storage I/O through the hypervisor.
+
+Reviewer A wondered about Willow (Seshadri et al.). Willow targets near-storage computation by extending the SSD with storage processing units (SPU) that run user code. An SPU OS enforces file isolation, but does not have direct access to the extent tree. Instead, it requests block mappings from the main CPU using RPC calls, and the CPU writes the mappings into a small cache in the SPU. As a result, slightly irregular access patterns will generate repeated RPC calls from the SPU to the CPU and thwart performance. We do not see how NeSC can be implemented on top of Willow (with or without SR-IO) while supporting unmodified guests and providing native storage performance. (in fact, Willow already emulates SR-IOV functionality to support application "channels"; it uses an SR-IOV emulation layer since its underlying BEE3 board only supports PCIe gen2.)
+
+Reviewer D asked about using SR-IOV as a baseline. The PCIe gen3 SR-IOV specification merely enables devices on the PCIe interconnect to dynamically allocate additional PCIe address for the device (i.e., <bus:device:function> triplets). SR-IOV therefore cannot be used as a standalone baseline (Section 6 explains how we emulated SR-IOV on the PCIe gen2 VC707 board).
+
+
+
+
+2. Memory technology parameters (reviewers A, D):
+-------------------------------
+
+This was indeed not clearly articulated in the paper. NeSC provides a block interface (not byte addressable) and is designed to deliver access latencies similar to those of Intel's P3700 PCIe SSD (~20us read/write latency for sequential accesses). At the time of developing NeSC, the P3700 was the fastest PCIe Flash SSD on the market.
+
+We chose to emulate the full device latency (rather than a specific technology's latency) because of overheads imposed by the FPGA prototype. For one, the FPGA clock speed is much lower than that of a conventional storage controller ASIC. In addition, the protyping board's single DRAM interface inhibits parallel accesses to storage, which are available on Flash SSDs. Finally, we show the benefits of NeSC even though its bandwdith is lower than commercial PCIe SSDs (1GB/s vs. P3700's 2.8GB/s).
+
+
+
+3. Explain the setup used for the motivation experiment in Figure 2 (reviewers A, B)
+-------------------------------------------------------------------
+
+Figure 2 compares the performance obtained by a guest VM when accessing a fast storage device directly vs. the performance it obtains when accessing it through virtio. We emulate faster devices using RAM disks. Specifically, a RAM disk was configured in both the hypervisor and the guest VM to emulate the fast storage device. To examine varying device bandwidth, we have changed the kernel's RAM disk implementation to throttle the disk's response time according to the desired bandwidth.
+
+
+
+4. More data on access patterns evaluated (reviewers C, E)
+--------------------------
+
+We evaluated the raw device performance with both sequential and random access patterns. Since both patterns exhibited similar speedup trends, the paper only depicts the speedup results for random access patterns. The macrobenchmarks mostly exhibit random access patterns.
+
+
+
+5. Why is the extent table stored in memory? can it be swapped? (reviewers B, D):
+----------------------------
+
+Storing the full extent tree in memory (rather than on the device) does not limit NeSC capacity to support large trees. Furthermore, NeSC enables the OS to swap swap out subtrees of the full extent tree. Each node in the tree has a "swapped out" bit, which is set by the OS when the subtree is swapped out. If a NeSC translation encounters a set 'swapped out' bit, it interrupts the main CPU to retrieve the subtree into memory. We will clarify this issue in the paper.
+
+
+
+6. Implications of not having a unified buffer cache (reviewer B)
+-----------------------------------------
+
+Existing hypervisors mediate all guest VMs storage accesses. The hypervisor can thus maintain a unified buffer cache and, with the help of the the baloon driver (which reclaims physical pages) eliminate buffer duplication across VMs. Instead, NeSC relies on the hypervisor's memory deduplication mechanism to eliminate buffer duplication across guest VMs'. Notably, memory deduplication is supported by all modern hypervisors (e.g., TPS in Vmware, KSM in kvm and "Memory CoW" in Xen). We will be sure to discuss this point in the final version.
+
+
+
+7. QoS (reviewer B)
+------
+
+QoS can be easily added to NeSC by extending the DMA engine to support stream priorities. The hypervisor can use the hardware-based stream prioritization to enforce QoS policies). Mellanox NiCs, for example, employ a similar mechanism.
+
+
+
+8. What application could benefit from using NeSC? (reviewer E)
+-------------------------------------------------
+
+Applications that benefit from NeSC are ones that frequently access storage since they cannot effectively cache their data set in memory (either due to the size of the data set or to poor access locality). 
+
+
+

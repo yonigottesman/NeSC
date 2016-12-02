@@ -1,0 +1,149 @@
+\begin{thebibliography}{10}
+
+\bibitem{popek1974formal}
+G.~J. Popek and R.~P. Goldberg, ``Formal requirements for virtualizable third
+  generation architectures,'' {\em Comm.\ ACM}, vol.~17, no.~7, pp.~412--421,
+  1974.
+
+\bibitem{intel}
+Intel, {\em Intel 64 and {IA-32} Architectures Software Developer Manual}, Dec
+  2015.
+
+\bibitem{armv8}
+ARM, {\em {ARMv8} Architecture Reference Manual}, Jan 2016.
+
+\bibitem{pcisigiov}
+PCI-SIG, ``{PCI I/O} virtualization.'' http://pcisig.com/specifications/iov/.
+
+\bibitem{smolyar15sriovsec}
+I.~Smolyar, M.~Ben-Yehuda, and D.~Tsafrir, ``Securing self-virtualizing
+  {Ethernet} devices,'' in {\em USENIX Security Symp.}, pp.~335--350, Aug 2015.
+
+\bibitem{intel-ssd}
+Intel, ``Product brief: Intel solid state drive data center p3608 series,''
+  2015.
+
+\bibitem{seagate16ssd}
+Seagate, ``Press release: Seagate demonstrates fastest-ever {SSD} flash
+  drive.''
+  www.seagate.com/em/en/about-seagate/news/seagate-demonstrates-fastest-ever-ssd-flash-drive-pr/,
+  Mar 2016.
+
+\bibitem{russell2008virtio}
+R.~Russell, ``virtio: towards a de-facto standard for virtual {I/O} devices,''
+  {\em Operating Systems Review}, vol.~42, no.~5, pp.~95--103, 2008.
+
+\bibitem{le12nested}
+D.~Le, H.~Huang, and H.~Wang, ``Understanding performance implications of
+  nested file systems in a virtualized environment,'' in {\em USENIX Conf.\ on
+  File and Storage Technologies (FAST)}, 2012.
+
+\bibitem{yu14swoverheads}
+Y.~J. Yu, D.~I. Shin, W.~Shin, N.~Y. Song, J.~W. Choi, H.~S. Kim, H.~Eom, and
+  H.~Y. Yeom, ``Optimizing the block {I/O} subsystem for fast storage
+  devices,'' {\em ACM Trans.\ on Computer Systems}, vol.~32, pp.~1--48, June
+  2014.
+
+\bibitem{sugerman2001virtualizing}
+J.~Sugerman, G.~Venkitachalam, and B.-H. Lim, ``Virtualizing i/o devices on
+  vmware workstation's hosted virtual machine monitor.,'' in {\em Usenix Annual
+  Technical Conf.}, pp.~1--14, 2001.
+
+\bibitem{barham2003xen}
+P.~Barham, B.~Dragovic, K.~Fraser, S.~Hand, T.~Harris, A.~Ho, R.~Neugebauer,
+  I.~Pratt, and A.~Warfield, ``Xen and the art of virtualization,'' in {\em ACM
+  Symp.\ on Operating Systems Principles (SOSP)}, pp.~164--177, 2003.
+
+\bibitem{raj2007high}
+H.~Raj and K.~Schwan, ``High performance and scalable i/o virtualization via
+  self-virtualized devices,'' in {\em Intl.\ Symp.\ on High performance
+  Distributed Computing (HPDC)}, pp.~179--188, 2007.
+
+\bibitem{nvme}
+NVM Express, {\em {NVM} Express Specification}, Oct 2015.
+\newblock Revision 1.2a.
+
+\bibitem{caulfield10moneta}
+A.~M. Caulfield, A.~De, J.~Coburn, T.~I. Mollow, R.~K. Gupta, and S.~Swanson,
+  ``Moneta: A high-performance storage array architecture for next-generation,
+  non-volatile memories,'' in {\em Intl.\ Symp.\ on Microarchitecture (MICRO)},
+  pp.~385--395, 2010.
+
+\bibitem{caulfield12moneta-d}
+A.~M. Caulfield, T.~I. Mollov, L.~A. Eisner, A.~De, J.~Coburn, and S.~Swanson,
+  ``Providing safe, user space access to fast, solid state disks,'' in {\em
+  Intl.\ Conf.\ on Arch.\ Support for Programming Languages \& Operating
+  Systems (ASPLOS)}, pp.~387--400, 2012.
+
+\bibitem{levy1984capability}
+H.~M. Levy, {\em Capability-Based Computer Systems}.
+\newblock Digital Press, 1984.
+
+\bibitem{seshadri2014willow}
+S.~Seshadri, M.~Gahagan, S.~Bhaskaran, T.~Bunker, A.~De, Y.~Jin, Y.~Liu, and
+  S.~Swanson, ``Willow: A user-programmable {SSD},'' in {\em Symp.\ on
+  Operating Systems Design \& Impl. (OSDI)}, pp.~67--80, 2014.
+
+\bibitem{kang2014multilanes}
+J.~Kang, B.~Zhang, T.~Wo, C.~Hu, and J.~Huai, ``Multilanes: providing
+  virtualized storage for os-level virtualization on many cores,'' in {\em
+  USENIX Conf.\ on File and Storage Technologies (FAST)}, pp.~317--329, 2014.
+
+\bibitem{peter2016arrakis}
+S.~Peter, J.~Li, I.~Zhang, D.~R. Ports, D.~Woos, A.~Krishnamurthy, T.~Anderson,
+  and T.~Roscoe, ``Arrakis: The operating system is the control plane,'' {\em
+  ACM Trans.\ on Computer Systems}, vol.~33, no.~4, p.~11, 2016.
+
+\bibitem{huang2015unified}
+J.~Huang, A.~Badam, M.~Qureshi, and K.~Schwan, ``Unified address translation
+  for memory-mapped {SSDs} with {FlashMap},'' in {\em Intl.\ Symp.\ on Computer
+  Architecture (ISCA)}, pp.~580--591, 2015.
+
+\bibitem{mathur07ext4}
+A.~Mathur, M.~Cao, S.~Bhattacharya, A.~Dilger, A.~Tomas, and L.~Vivier, ``The
+  new ext4 filesystem: current status and future plans,'' in {\em Ottawa Linux
+  Symp.}, Jun 2007.
+
+\bibitem{rodeh13btrfs}
+O.~Rodeh, J.~Bacik, and C.~Mason, ``{BTRFS}: The linux {B-Tree} filesystem,''
+  {\em ACM Trans.\ on Storage}, vol.~9, pp.~1--32, Aug. 2013.
+
+\bibitem{sweeney96xfs}
+A.~Sweeney, D.~Doucette, W.~Hu, C.~Anderson, M.~Nishimoto, and G.~Peck,
+  ``Scalability in the {XFS} file system,'' in {\em Usenix Annual Technical
+  Conf.}, 1996.
+
+\bibitem{comer79btree}
+D.~Comer, ``Ubiquitous {B-Tree},'' {\em ACM Computing Surveys}, vol.~11,
+  pp.~121--137, June 1979.
+
+\bibitem{gordon12eli}
+A.~Gordon, N.~Amit, N.~Har'El, M.~Ben-Yehuda, A.~Landau, A.~Schuster, and
+  D.~Tsafrir, ``{ELI}: Bare-metal performance for {I/O} virtualization,'' in
+  {\em Intl.\ Conf.\ on Arch.\ Support for Programming Languages \& Operating
+  Systems (ASPLOS)}, 2012.
+
+\bibitem{ahn2015dcs}
+J.~Ahn, D.~Kwon, Y.~Kim, M.~Ajdari, J.~Lee, and J.~Kim, ``{DCS}: a fast and
+  scalable device-centric server architecture,'' in {\em Intl.\ Symp.\ on
+  Microarchitecture (MICRO)}, 2015.
+
+\bibitem{love10lkd}
+R.~Love, {\em Linux Kernel Development}.
+\newblock Addison-Wesley Professional, 3rd~ed., Jul 2010.
+
+\bibitem{coreutils}
+``Gnu coreutils.'' http://www.gnu.org/software/coreutils/coreutils.html.
+
+\bibitem{kopytov2004sysbench}
+A.~Kopytov, ``{SysBench}: a system performance benchmark.''
+  http://sysbench.sourceforge.net, 2004.
+
+\bibitem{katcher1997postmark}
+J.~Katcher, ``Postmark: A new file system benchmark,'' Tech. Rep. TR3022,
+  Network Appliance, 1997.
+
+\bibitem{mysql}
+``{MySQL}.'' https://www.mysql.com.
+
+\end{thebibliography}
