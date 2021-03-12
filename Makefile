@@ -61,7 +61,7 @@ clean:
 %.ps:	%.dvi
 	$(DVIPS) $(DVIPS_FLAGS) -o $@ $<
 
-%.pdf:   $(TEX_INPUTS) %.bib
+g%.pdf:   $(TEX_INPUTS) %.bib
 	@echo "Running $(LATEX) on $*.tex"
 	@$(LATEX) $(LATEX_FLAGS) $*.tex
 	@echo "Running $(BIBTEX) on $*"

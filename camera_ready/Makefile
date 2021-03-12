@@ -6,8 +6,8 @@ LANG=C
 PAPER=vdisk
 
 # define the tools
-LATEX := /usr/bin/pdflatex
-BIBTEX := /usr/bin/bibtex
+LATEX := pdflatex
+BIBTEX := bibtex
 DVIPS := /usr/bin/dvips
 DVIPDF := /usr/bin/dvipdf
 DVIPDFM := /usr/bin/dvipdfm
@@ -72,6 +72,7 @@ clean:
 	@$(LATEX) $*
 
 bib:
+	@echo "running bib"
 	$(BIBTEX) $(BIBTEX_FLAGS) $(PAPER)
 
 watermark: all

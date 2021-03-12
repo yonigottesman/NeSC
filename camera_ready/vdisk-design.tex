@@ -53,7 +53,7 @@ The PF and VF differ semantically in that VFs can only access the subset of the 
 \end{figure*}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Decoupling the PF from the VFs enables the hypervisor to logically manage the physical device with its own filesystem, and expose files (or collections thereof) to client VMs as raw virtual devices through VFs (as illustrated in Figure~\ref{fig:nesc_outline}). Each VF is thus associated with a mapping table that translates client requests to physical blocks. Specifically, since client VMs view VFs as regular block devices, they send requests pertaining to LBAs on the virtual device. NeSC refers to client LBAs as virtual LBAs (vLBA), to host LBAs as physical LBAs (pBLA), and the translation process is referred to as a vLBA-to-pLBA translation.
+decoupling the PF from the VFs enables the hypervisor to logically manage the physical device with its own filesystem, and expose files (or collections thereof) to client VMs as raw virtual devices through VFs (as illustrated in Figure~\ref{fig:nesc_outline}). Each VF is thus associated with a mapping table that translates client requests to physical blocks. Specifically, since client VMs view VFs as regular block devices, they send requests pertaining to LBAs on the virtual device. NeSC refers to client LBAs as virtual LBAs (vLBA), to host LBAs as physical LBAs (pBLA), and the translation process is referred to as a vLBA-to-pLBA translation.
 
 The vLBA-to-pLBA mapping is performed using per-VF mapping tables. The mapping tables are designed as \emph{extent trees}, a method inspired by modern UNIX filesystems.
 %
@@ -62,7 +62,7 @@ Each file is associated with an extent tree (pointed to by the file's \emph{inod
 
 The key benefit of extent trees is that their depth is not fixed but rather depends on the mapping itself. In ext4, for example, a 100MB file can be allocated using a single extent, thereby obviating the need to create the indirect mappings for each individual block. Extents thus improve performance and also reduce management overheads.
 
-Figure~\ref{fig:extent_tree} illustrates the NeSC VF extent tree (which resembles the ext4 extent tree format). Each node in the tree comprises either a group of node pointers, which point to the next level of nodes, or a group of extent pointers, which are the tree leaves that point to the physical location of the extents. The header of each node indicates whether it contains node indices or extent pointers. 
+figure~\ref{fig:extent_tree} illustrates the NeSC VF extent tree (which resembles the ext4 extent tree format). Each node in the tree comprises either a group of node pointers, which point to the next level of nodes, or a group of extent pointers, which are the tree leaves that point to the physical location of the extents. The header of each node indicates whether it contains node indices or extent pointers. 
  
 Figure~\ref{fig:extent_fields} illustrates the content of the entries in each type of node in the extent tree. Each \emph{extent pointer} entry consists of the first logical block it represents, a pointer to the first physical block of its extent, and the size of the extent. Each \emph{node pointer} entry comprises the first logical block it represents, the number of (non-contiguous) logical blocks it covers, and a pointer to its array of child nodes.
 %
@@ -105,8 +105,7 @@ Finally, the NeSC design also enables multiple VFs to share an extent tree and t
 \subsubsection*{Creating a new virtual disk}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-When creating a new virtual device, the hypervisor first creates the extent tree that will map the virtual device to physical blocks.  
-Since most modern filesystems use extent trees to map files to their physical layout, this stage typically consists of translating the filesystem's own per-file extent tree to the NeSC tree format. The hypervisor does not fully preallocate all the physical blocks needed for the new virtual device (i.e., lazy allocation). 
+When creating a new virtual device, the hypervisor first creates the extent tree that will map the virtual device to physical blocks. Since most modern filesystems use extent trees to map files to their physical layout, this stage typically consists of translating the filesystem's own per-file extent tree to the NeSC tree format. The hypervisor does not fully preallocate all the physical blocks needed for the new virtual device (i.e., lazy allocation). 
 
 The hypervisor then creates a new NeSC VF through the PF. It initializes the VF configuration registers (e.g., the size of the virtual device), writes the extent tree to memory and sets the VF's base extent tree configuration register to point to the in-memory extent tree.
 
